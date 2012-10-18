@@ -1,89 +1,98 @@
-<%=packageName ? "package ${packageName}\n" : ''%>
-<% classNameLowerCase = className.toLowerCase() %>
-import grails.converters.JSON
-import grails.validation.ValidationErrors
-import groovy.json.JsonBuilder;
-
-import org.codehaus.groovy.grails.web.json.JSONObject;
-import org.springframework.dao.DataIntegrityViolationException
-
-class ${className}Controller {
+<%=packageName ? "package ${packageName}\n\n" : ''%>class ${className}Controller {
 
     static allowedMethods = [save: "POST", update: "POST", delete: "POST"]
 
-    def index() {
+    def index = {
         redirect(action: "list", params: params)
     }
-	
-    def list() {
-      params.max = Math.min(params.max ? params.int('max') : 10, 100)
-     	render ${className}.list(params) as JSON
+
+    def list = {
+        params.max = Math.min(params.max ? params.int('max') : 10, 100)
+        [${propertyName}List: ${className}.list(params), ${propertyName}Total: ${className}.count()]
     }
 
-    def save() {
-      def jsonObject = JSON.parse(params.${classNameLowerCase})
-      ${className} ${classNameLowerCase}Instance = new ${className}(jsonObject)
-      if (!${classNameLowerCase}Instance.save(flush: true)) {
-        ValidationErrors validationErrors = ${classNameLowerCase}Instance.errors
-        render validationErrors as JSON
-      }
-      render ${classNameLowerCase}Instance as JSON
-    }
-    
-    def show() {
-      def ${classNameLowerCase}Instance = ${className}.get(params.id)
-      if (!${classNameLowerCase}Instance) {
-        flash.message = message(code: 'default.not.found.message', args: [message(code: '${classNameLowerCase}.label', default: '${className}'), params.id])
-        render flash as JSON
-      }
-      render ${className}Instance as JSON
+    def create = {
+        def ${propertyName} = new ${className}()
+        ${propertyName}.properties = params
+        return [${propertyName}: ${propertyName}]
     }
 
-    def update() {
-      def jsonObject = JSON.parse(params.${classNameLowerCase})
-      ${className} ${classNameLowerCase}Received = new ${className}(jsonObject)
-
-        def ${classNameLowerCase}Instance = ${className}.get(jsonObject.id)
-        if (!${classNameLowerCase}Instance) {
-            flash.message = message(code: 'default.not.found.message', args: [message(code: '${classNameLowerCase}.label', default: '${className}'), params.id])
-            render flash as JSON
+    def save = {
+        def ${propertyName} = new ${className}(params)
+        if (${propertyName}.save(flush: true)) {
+            flash.message = "\${message(code: 'default.created.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), ${propertyName}.id])}"
+            redirect(action: "show", id: ${propertyName}.id)
         }
+        else {
+            render(view: "create", model: [${propertyName}: ${propertyName}])
+        }
+    }
 
-        if (jsonObject.version) {
-          def version = jsonObject.version.toLong()
-          if (${classNameLowerCase}Instance.version > version) {
-            ${classNameLowerCase}Instance.errors.rejectValue("version", "default.optimistic.locking.failure",
-                          [message(code: '${classNameLowerCase}.label', default: '${className}')] as Object[],
-                          "Another user has updated this ${className} while you were editing")
-                ValidationErrors validationErrors = ${classNameLowerCase}Instance.errors
-                render validationErrors as JSON
-                return
+    def show = {
+        def ${propertyName} = ${className}.get(params.id)
+        if (!${propertyName}) {
+            flash.message = "\${message(code: 'default.not.found.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), params.id])}"
+            redirect(action: "list")
+        }
+        else {
+            [${propertyName}: ${propertyName}]
+        }
+    }
+
+    def edit = {
+        def ${propertyName} = ${className}.get(params.id)
+        if (!${propertyName}) {
+            flash.message = "\${message(code: 'default.not.found.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), params.id])}"
+            redirect(action: "list")
+        }
+        else {
+            return [${propertyName}: ${propertyName}]
+        }
+    }
+
+    def update = {
+        def ${propertyName} = ${className}.get(params.id)
+        if (${propertyName}) {
+            if (params.version) {
+                def version = params.version.toLong()
+                if (${propertyName}.version > version) {
+                    <% def lowerCaseName = grails.util.GrailsNameUtils.getPropertyName(className) %>
+                    ${propertyName}.errors.rejectValue("version", "default.optimistic.locking.failure", [message(code: '${domainClass.propertyName}.label', default: '${className}')] as Object[], "Another user has updated this ${className} while you were editing")
+                    render(view: "edit", model: [${propertyName}: ${propertyName}])
+                    return
+                }
+            }
+            ${propertyName}.properties = params
+            if (!${propertyName}.hasErrors() && ${propertyName}.save(flush: true)) {
+                flash.message = "\${message(code: 'default.updated.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), ${propertyName}.id])}"
+                redirect(action: "show", id: ${propertyName}.id)
+            }
+            else {
+                render(view: "edit", model: [${propertyName}: ${propertyName}])
             }
         }
-
-        ${classNameLowerCase}Instance.properties = ${classNameLowerCase}Received.properties
-
-        if (!${classNameLowerCase}Instance.save(flush: true)) {
-          ValidationErrors validationErrors = ${classNameLowerCase}Instance.errors
-          render validationErrors as JSON
+        else {
+            flash.message = "\${message(code: 'default.not.found.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), params.id])}"
+            redirect(action: "list")
         }
-		    render ${classNameLowerCase}Instance as JSON
     }
 
-    def delete() {
-      def ${classNameLowerCase}Id = params.id
-      def ${classNameLowerCase}Instance = ${className}.get(params.id)
-      if (!${classNameLowerCase}Instance) {
-        flash.message = message(code: 'default.not.found.message', args: [message(code: '${classNameLowerCase}.label', default: '${className}'), params.id])
-        render flash as JSON
-      }
-      try {
-            ${classNameLowerCase}Instance.delete(flush: true)
-      }
-      catch (DataIntegrityViolationException e) {
-        flash.message = message(code: 'default.not.deleted.message', args: [message(code: '${classNameLowerCase}.label', default: '${className}'), params.id])
-        render flash as JSON
-      }
-      render ${classNameLowerCase}Instance as JSON
+    def delete = {
+        def ${propertyName} = ${className}.get(params.id)
+        if (${propertyName}) {
+            try {
+                ${propertyName}.delete(flush: true)
+                flash.message = "\${message(code: 'default.deleted.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), params.id])}"
+                redirect(action: "list")
+            }
+            catch (org.springframework.dao.DataIntegrityViolationException e) {
+                flash.message = "\${message(code: 'default.not.deleted.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), params.id])}"
+                redirect(action: "show", id: params.id)
+            }
+        }
+        else {
+            flash.message = "\${message(code: 'default.not.found.message', args: [message(code: '${domainClass.propertyName}.label', default: '${className}'), params.id])}"
+            redirect(action: "list")
+        }
     }
 }

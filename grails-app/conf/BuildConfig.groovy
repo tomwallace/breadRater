@@ -41,9 +41,9 @@ grails.project.dependency.resolution = {
         runtime ":jquery:1.7.1"
         runtime ":resources:1.1.6"
 
-        compile ":jquery-mobile:1.1.0.5"
+        //compile ":jquery-mobile:1.1.0.5"
         compile ":jquery-mobile-scaffolding:0.1"
-		compile ":html5-mobile-scaffolding:0.2"
+		//compile ":html5-mobile-scaffolding:0.2"
         compile ":geolocation:0.4.1"
         compile ":spring-mobile:0.4"
 

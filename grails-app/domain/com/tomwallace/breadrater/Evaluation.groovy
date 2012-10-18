@@ -1,4 +1,4 @@
-package breadrater
+package com.tomwallace.breadrater
 
 class Evaluation {
 	Date dateEvaluated
