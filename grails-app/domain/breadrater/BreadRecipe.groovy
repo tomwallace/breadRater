@@ -5,6 +5,8 @@ class BreadRecipe {
     String type
     String description
 
+	static hasMany = [loaves: Loaf]
+	
     static constraints = {
         name nullable: false, blank: false
         type nullable: false, blank: false
